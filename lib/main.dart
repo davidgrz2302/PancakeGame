@@ -4,10 +4,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class PancakeState {
   List<int> stack = [];
+  bool isSorted;
 
-  PancakeState(int n) {
+  PancakeState(int n, {this.isSorted = false}) {
     stack = List<int>.generate(n, (index) => index + 1);
     stack.shuffle(); // randomly shuffle the pancakes
+  }
+
+  // Check if the stack is sorted
+  bool checkSorted(List<int> stack) {
+    for (int i = 1; i < stack.length; i++) {
+      if (stack[i - 1] > stack[i]) return false;
+    }
+    return true;
   }
 }
 
@@ -19,17 +28,17 @@ class PancakeCubit extends Cubit<PancakeState> {
   }
 
   void randomizeStack() {
-    // keep the same number of pancakes but shuffle the stack
-    emit(PancakeState(state.stack.length));
+    emit(PancakeState(state.stack.length)); // shuffle the stack
   }
 
   void flip(int index) {
-    // flip the portion of the stack from the top to the selected index
+    // Flip the portion of the stack from the top to the selected index
     List<int> newStack = [
       ...state.stack.sublist(0, index + 1).reversed,
       ...state.stack.sublist(index + 1)
     ];
-    emit(PancakeState(state.stack.length)..stack = newStack);
+    bool sorted = PancakeState(newStack.length).checkSorted(newStack);
+    emit(PancakeState(state.stack.length, isSorted: sorted)..stack = newStack);
   }
 }
 
@@ -74,10 +83,32 @@ class PancakeBody extends StatelessWidget {
       create: (context) => PancakeCubit(5),
       child: BlocBuilder<PancakeCubit, PancakeState>(
         builder: (context, pancakeState) {
+          if (pancakeState.isSorted) {
+            // Show "You Win" screen when sorted
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "🎉 You Win! 🎉",
+                    style: TextStyle(fontSize: 40, color: Colors.greenAccent),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      BlocProvider.of<PancakeCubit>(context).randomizeStack();
+                    },
+                    child: const Text("Start Over"),
+                  ),
+                ],
+              ),
+            );
+          }
+
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // pancake Stack inside a Scrollable View
+              // Pancake stack inside a Scrollable View
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
@@ -90,13 +121,13 @@ class PancakeBody extends StatelessWidget {
                           int size = entry.value;
                           return GestureDetector(
                             onTap: () {
-                              // flip all pancakes from the top down to the tapped one
+                              // Flip all pancakes from the top down to the tapped one
                               BlocProvider.of<PancakeCubit>(context).flip(index);
                             },
                             child: Padding(
                               padding: const EdgeInsets.all(8.0),
                               child: Container(
-                                width: size * 30.0, 
+                                width: size * 30.0,
                                 height: 30.0,
                                 decoration: BoxDecoration(
                                   color: Colors.brown,
@@ -149,7 +180,7 @@ class PancakeBody extends StatelessWidget {
               // New Stack Button
               FloatingActionButton(
                 onPressed: () {
-                  // generate a new stack with the same number of pancakes
+                  // Generate a new stack with the same number of pancakes
                   BlocProvider.of<PancakeCubit>(context).randomizeStack();
                 },
                 child: const Center(child: Text("New Stack", textAlign: TextAlign.center)),
