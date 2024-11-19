@@ -33,7 +33,7 @@ class PancakeCubit extends Cubit<PancakeState> {
   }
 }
 
-void main9998() {
+void main() {
   runApp(MyApp());
 }
 
